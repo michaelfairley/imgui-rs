@@ -2,7 +2,7 @@ pub extern crate imgui_sys as sys;
 
 use std::ffi::CStr;
 use std::mem;
-use std::os::raw::{c_char, c_float, c_int, c_uchar};
+use std::os::raw::{c_char, c_float, c_int, c_uchar, c_void};
 use std::ptr;
 use std::slice;
 use std::str;
@@ -570,6 +570,53 @@ impl<'ui> Ui<'ui> {
         F: FnOnce(),
     {
         self.push_id(id);
+        f();
+        self.pop_id();
+    }
+
+    /// Pushes an identifier to the ID stack.
+    pub fn push_id_imstr(&self, id: &ImStr) { unsafe { sys::igPushIDStr(id.as_ptr()) }; }
+
+    /// Runs a function after temporarily pushing a value to the ID stack.
+    pub fn with_id_imstr<F>(&self, id: &ImStr, f: F)
+    where
+        F: FnOnce(),
+    {
+        self.push_id_imstr(id);
+        f();
+        self.pop_id();
+    }
+
+    /// Pushes an identifier to the ID stack.
+    pub fn push_id_str(&self, id: &str) {
+        unsafe {
+            let start = id.as_ptr() as *const c_char;
+            let end = id.as_ptr().add(id.len()) as *const c_char;
+            sys::igPushIDStrRange(start, end);
+        }
+    }
+
+    /// Runs a function after temporarily pushing a value to the ID stack.
+    pub fn with_id_str<F>(&self, id: &str, f: F)
+    where
+        F: FnOnce(),
+    {
+        self.push_id_str(id);
+        f();
+        self.pop_id();
+    }
+
+    /// Pushes an identifier to the ID stack.
+    pub fn push_id_ptr<T>(&self, id: &T) {
+        unsafe { sys::igPushIDPtr(id as *const T as *const c_void) };
+    }
+
+    /// Runs a function after temporarily pushing a value to the ID stack.
+    pub fn with_id_ptr<T, F>(&self, id: &T, f: F)
+    where
+        F: FnOnce(),
+    {
+        self.push_id_ptr(id);
         f();
         self.pop_id();
     }
